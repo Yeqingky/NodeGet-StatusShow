@@ -99,7 +99,7 @@ export function NodeDetail({ node, onClose, showSource, pool }: Props) {
   return (
     <div
       ref={scrollRef}
-      className="fixed inset-0 z-50 bg-background overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-background/40 dark:bg-background/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150"
     >
       <div
         ref={headerRef}

@@ -42,18 +42,6 @@ export interface ChartSeries {
   color: string
 }
 
-function forwardFill(data: ChartPoint[], names: string[]) {
-  const last: Record<string, number | null> = {}
-  for (const n of names) last[n] = null
-  for (const pt of data) {
-    for (const n of names) {
-      const v = pt[n]
-      if (v == null) pt[n] = last[n]
-      else last[n] = v
-    }
-  }
-}
-
 export function buildLatencyChart(rows: TaskQueryResult[], type: LatencyType) {
   const names = seriesNames(rows)
   const series: ChartSeries[] = names.map(name => ({ name, color: latencyColor(name) }))
@@ -71,7 +59,6 @@ export function buildLatencyChart(rows: TaskQueryResult[], type: LatencyType) {
   }
 
   const data = [...byTs.values()].sort((a, b) => a.t - b.t)
-  forwardFill(data, names)
   return { data, series }
 }
 
