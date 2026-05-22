@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { parseGitRepo } from "../utils/git"
-import { ExternalLink, HardDriveDownload, FolderSync } from 'lucide-react'
+import { FolderSync } from 'lucide-react'
 
 
 export function Footer({ text, repo, dist_page }: { text?: string, repo?: string, dist_page?: string }) {
@@ -22,12 +22,11 @@ export function Footer({ text, repo, dist_page }: { text?: string, repo?: string
   return (
     <footer className="border-t">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-end gap-3 text-xs text-muted-foreground">
-        <a href={repo} target="_blank" rel="noreferrer" className="hover:text-primary transition-colors mr-auto">
+        <a href="https://github.com/NodeSeekDev/NodeGet" target="_blank" rel="noreferrer" className="hover:text-primary transition-colors mr-auto">
           {text || 'Powered by NodeGet'}
         </a>
-        <a href="download.html" target="_blank" rel="noreferrer" className="ml-2 flex items-center hover:text-primary transition-colors">
-          <HardDriveDownload className='inline-block w-3 mr-1' />
-          提取当前主题
+        <a href="https://github.com/NodeSeekDev/NodeGet-StatusShow" target="_blank" rel="noreferrer" className="ml-2 hover:text-primary transition-colors">
+          NodeGet-StatusShow
         </a>
         {outdated && (
           <>
