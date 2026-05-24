@@ -9,7 +9,7 @@
     <script>
       try {
         var t = localStorage.getItem('nodeget.theme')
-        if (t !== 'light') {
+        if (t === 'dark') {
           document.documentElement.classList.add('dark')
         }
       } catch (_) {}
