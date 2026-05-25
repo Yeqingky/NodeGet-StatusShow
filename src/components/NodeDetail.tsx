@@ -22,7 +22,9 @@ import { cn, strokeColor } from '../utils/cn'
 import {
   buildLatencyChart,
   computeLatencyStats,
+  LATENCY_TIMEOUT,
   type LatencyStats,
+  type LatencyValue,
 } from '../utils/latency'
 import { useNodeLatency } from '../hooks/useNodeLatency'
 import type { BackendPool } from '../api/pool'
@@ -33,6 +35,7 @@ const TOOLTIP_STYLE = {
   border: '1px solid hsl(var(--border))',
   borderRadius: 6,
   fontSize: 11,
+  padding: '10px 12px',
 }
 
 interface Props {
@@ -357,6 +360,20 @@ function LatencyBlock({ title, rows, type, loading }: LatencyBlockProps) {
   const empty = data.length === 0
 
   const visibleSeries = series.filter(s => !hidden.has(s.name))
+  const pointByTs = useMemo(() => new Map(data.map(point => [point.t, point])), [data])
+  const chartData = useMemo(
+    () =>
+      data.map(point => {
+        const next: Record<string, number | null> = { t: point.t }
+        for (const key of Object.keys(point)) {
+          if (key === 't') continue
+          const value = point[key] as LatencyValue
+          next[key] = typeof value === 'number' ? value : null
+        }
+        return next
+      }),
+    [data],
+  )
 
   const toggle = (name: string) =>
     setHidden(prev => {
@@ -376,7 +393,12 @@ function LatencyBlock({ title, rows, type, loading }: LatencyBlockProps) {
         )}
         {!empty && (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <LineChart
+              data={chartData}
+              syncId="latency"
+              syncMethod="value"
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            >
               <XAxis
                 dataKey="t"
                 type="number"
@@ -394,9 +416,15 @@ function LatencyBlock({ title, rows, type, loading }: LatencyBlockProps) {
                 domain={['auto', 'auto']}
               />
               <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                labelFormatter={t => new Date(Number(t)).toLocaleTimeString()}
-                formatter={(v: number) => ms(Number(v))}
+                cursor={{ stroke: 'hsl(var(--border))', strokeDasharray: '4 4' }}
+                content={({ active, label }) => (
+                  <LatencyTooltip
+                    active={active}
+                    label={label}
+                    series={visibleSeries}
+                    point={label != null ? pointByTs.get(Number(label)) ?? null : null}
+                  />
+                )}
               />
               {visibleSeries.map(s => (
                 <Line
@@ -439,6 +467,47 @@ function LatencyBlock({ title, rows, type, loading }: LatencyBlockProps) {
         </div>
       )}
     </Section>
+  )
+}
+
+function LatencyTooltip({
+  active,
+  label,
+  point,
+  series,
+}: {
+  active?: boolean
+  label?: string | number
+  point: Record<string, LatencyValue | number> | null
+  series: { name: string; color: string }[]
+}) {
+  if (!active || label == null || !point || series.length === 0) return null
+
+  return (
+    <div style={TOOLTIP_STYLE}>
+      <div className="mb-1 font-mono text-[11px] text-muted-foreground">
+        {new Date(Number(label)).toLocaleTimeString()}
+      </div>
+      <div className="space-y-1">
+        {series.map(item => {
+          const value = point[item.name] as LatencyValue
+          return (
+            <div key={item.name} className="flex items-center justify-between gap-3 text-xs">
+              <span className="flex items-center gap-2 min-w-0">
+                <span
+                  className="inline-block h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="truncate">{item.name}</span>
+              </span>
+              <span className="font-mono shrink-0">
+                {value === LATENCY_TIMEOUT ? 'Timeout' : value != null ? ms(Number(value)) : '—'}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

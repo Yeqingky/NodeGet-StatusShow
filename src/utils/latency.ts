@@ -11,6 +11,13 @@ const COLORS = [
   '#14b8a6',
 ]
 
+const MIN_BUCKET_MS = 1_000
+const MAX_BUCKET_MS = 15_000
+const FALLBACK_BUCKET_MS = 5_000
+
+export const LATENCY_TIMEOUT = 'timeout' as const
+export type LatencyValue = number | typeof LATENCY_TIMEOUT | null
+
 export function latencyColor(name: string) {
   let h = 0
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0
@@ -32,9 +39,63 @@ function seriesNames(rows: TaskQueryResult[]) {
   return [...set].sort((a, b) => a.localeCompare(b))
 }
 
+function timeBucketMs(rows: TaskQueryResult[]) {
+  const bySource = new Map<string, number[]>()
+
+  for (const row of rows) {
+    const name = row.cron_source || '未知'
+    const list = bySource.get(name) || []
+    list.push(normalizeTs(row.timestamp))
+    bySource.set(name, list)
+  }
+
+  const gaps: number[] = []
+  for (const list of bySource.values()) {
+    list.sort((a, b) => a - b)
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i] - list[i - 1]
+      if (gap > 0) gaps.push(gap)
+    }
+  }
+
+  if (!gaps.length) return FALLBACK_BUCKET_MS
+  gaps.sort((a, b) => a - b)
+  const median = gaps[Math.floor(gaps.length / 2)]
+  return Math.max(MIN_BUCKET_MS, Math.min(MAX_BUCKET_MS, Math.round(median / 4)))
+}
+
+function buildBucketMap(rows: TaskQueryResult[]) {
+  const bucketMs = timeBucketMs(rows)
+  const values = [...new Set(rows.map(row => normalizeTs(row.timestamp)))].sort((a, b) => a - b)
+  const bucketMap = new Map<number, number>()
+
+  if (!values.length) return bucketMap
+
+  let cluster: number[] = [values[0]]
+
+  const flush = () => {
+    const center = Math.round(cluster.reduce((sum, value) => sum + value, 0) / cluster.length)
+    for (const value of cluster) bucketMap.set(value, center)
+  }
+
+  for (let i = 1; i < values.length; i++) {
+    const value = values[i]
+    const prev = cluster[cluster.length - 1]
+    if (value - prev <= bucketMs) {
+      cluster.push(value)
+      continue
+    }
+    flush()
+    cluster = [value]
+  }
+
+  flush()
+  return bucketMap
+}
+
 export interface ChartPoint {
   t: number
-  [series: string]: number | null
+  [series: string]: LatencyValue | number
 }
 
 export interface ChartSeries {
@@ -46,16 +107,19 @@ export function buildLatencyChart(rows: TaskQueryResult[], type: LatencyType) {
   const names = seriesNames(rows)
   const series: ChartSeries[] = names.map(name => ({ name, color: latencyColor(name) }))
   const byTs = new Map<number, ChartPoint>()
+  const bucketMap = buildBucketMap(rows)
 
   for (const r of rows) {
-    const t = normalizeTs(r.timestamp)
+    const rawTs = normalizeTs(r.timestamp)
+    const t = bucketMap.get(rawTs) ?? rawTs
     let pt = byTs.get(t)
     if (!pt) {
       pt = { t }
       for (const n of names) pt[n] = null
       byTs.set(t, pt)
     }
-    pt[r.cron_source || '未知'] = pickValue(r, type)
+    const value = pickValue(r, type)
+    pt[r.cron_source || '未知'] = value ?? LATENCY_TIMEOUT
   }
 
   const data = [...byTs.values()].sort((a, b) => a.t - b.t)
