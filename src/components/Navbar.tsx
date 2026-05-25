@@ -20,33 +20,14 @@ interface Props {
 
 export function Navbar({ siteName, logo, query, onQuery, view, onView, sort, onSort }: Props) {
   const [searchOpen, setSearchOpen] = useState(false)
-  const [stuck, setStuck] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const headerRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (searchOpen) inputRef.current?.focus()
   }, [searchOpen])
 
-  useEffect(() => {
-    const onScroll = () => {
-      const h = headerRef.current?.offsetHeight ?? 60
-      setStuck(window.scrollY > h)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   return (
-    <header
-      ref={headerRef}
-      className={`sticky top-0 z-10 transition-[background-color,backdrop-filter,border-color] duration-200 ${
-        stuck
-          ? 'border-b border-border/40 backdrop-blur bg-background/70'
-          : 'border-b border-transparent'
-      }`}
-    >
+    <header className="border-b border-transparent">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 px-4 sm:px-6 py-3">
         <a
           href="./"

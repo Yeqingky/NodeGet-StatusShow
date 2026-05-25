@@ -166,10 +166,13 @@ export function WorldMap({ nodes, onOpen }: Props) {
     liveRef.current = { byCountry, onOpen }
   })
 
-  const option = useMemo(() => buildOption(byCountry), [dataSig])
+  const option = useMemo(() => {
+    if (!ready) return null
+    return buildOption(byCountry)
+  }, [ready, dataSig, byCountry])
 
   useEffect(() => {
-    if (!ready || !wrapRef.current) return
+    if (!ready || !wrapRef.current || !option) return
     if (!chartRef.current) {
       chartRef.current = echarts.init(wrapRef.current)
       chartRef.current.on('click', (p: any) => {
@@ -180,7 +183,7 @@ export function WorldMap({ nodes, onOpen }: Props) {
         else setPickedA2(p.name)
       })
     }
-    chartRef.current.setOption(option, false)
+    chartRef.current.setOption(option, true)
   }, [ready, option])
 
   useEffect(() => {
@@ -250,12 +253,13 @@ function buildOption(byCountry: Map<string, CountryEntry>) {
   const entries = [...byCountry.entries()].filter(([a2]) => knownA2.has(a2))
   const data = entries.map(([a2, e]) => ({ name: a2, value: e.online + e.offline }))
   const max = data.reduce((m, d) => Math.max(m, d.value), 0)
+  const scaleMax = max > 1 ? max : 2
   const tinyMarkers = entries
     .map(([a2, e]) => {
       const c = tinyCenter.get(a2)
       if (!c) return null
       const v = e.online + e.offline
-      const t = max > 0 ? v / max : 0
+      const t = max > 0 ? v / scaleMax : 0
       return {
         name: a2,
         coord: c,
@@ -276,9 +280,9 @@ function buildOption(byCountry: Map<string, CountryEntry>) {
     backgroundColor: 'transparent',
     visualMap: {
       type: 'continuous' as const,
-      min: 1,
-      max: Math.max(max, 1),
-      show: max > 0,
+      min: 0,
+      max: scaleMax,
+      show: max > 1,
       seriesIndex: 0,
       left: 16,
       bottom: 16,

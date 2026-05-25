@@ -44,8 +44,6 @@ interface Props {
 
 export function NodeDetail({ node, onClose, showSource, pool }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLDivElement>(null)
-  const [stuck, setStuck] = useState(false)
 
   useEffect(() => {
     if (!node) return
@@ -60,18 +58,6 @@ export function NodeDetail({ node, onClose, showSource, pool }: Props) {
       document.body.style.overflow = prev
     }
   }, [node, onClose])
-
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    setStuck(false)
-    const onScroll = () => {
-      const h = headerRef.current?.offsetHeight ?? 60
-      setStuck(el.scrollTop > h)
-    }
-    el.addEventListener('scroll', onScroll, { passive: true })
-    return () => el.removeEventListener('scroll', onScroll)
-  }, [node])
 
   const { pingData, tcpData, loading: latencyLoading } = useNodeLatency(
     pool,
@@ -101,14 +87,7 @@ export function NodeDetail({ node, onClose, showSource, pool }: Props) {
       ref={scrollRef}
       className="fixed inset-0 z-50 bg-background/40 dark:bg-background/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150"
     >
-      <div
-        ref={headerRef}
-        className={`sticky top-0 z-10 transition-[background-color,backdrop-filter,border-color] duration-200 ${
-          stuck
-            ? 'border-b border-border/40 backdrop-blur bg-background/70'
-            : 'border-b border-transparent'
-        }`}
-      >
+      <div className="border-b border-transparent">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="返回" className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
