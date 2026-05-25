@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Flag } from './Flag'
 import { StatusDot } from './StatusDot'
 import { bytes, pct, relativeAge } from '../utils/format'
-import { deriveUsage, displayName, distroLogo, virtLabel } from '../utils/derive'
+import { deriveUsage, displayName, distroLogo } from '../utils/derive'
 import { cn, loadColor } from '../utils/cn'
 import type { Node } from '../types'
 
@@ -22,8 +22,7 @@ export function NodeTable({ nodes, onOpen }: Props) {
           <TableRow>
             <TableHead className="w-8" />
             <TableHead>名称</TableHead>
-            <TableHead className="w-12 text-center">地区</TableHead>
-            <TableHead>架构</TableHead>
+            <TableHead className="w-16 text-center whitespace-nowrap">地区</TableHead>
             <TableHead>CPU</TableHead>
             <TableHead>内存</TableHead>
             <TableHead>磁盘</TableHead>
@@ -36,7 +35,6 @@ export function NodeTable({ nodes, onOpen }: Props) {
           {nodes.map(n => {
             const u = deriveUsage(n)
             const logo = distroLogo(n)
-            const virt = virtLabel(n)
             return (
               <TableRow
                 key={n.uuid}
@@ -64,15 +62,6 @@ export function NodeTable({ nodes, onOpen }: Props) {
                     <Flag code={n.meta.region} />
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {virt ? (
-                    <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
-                      {virt}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
                 <TableCell>
