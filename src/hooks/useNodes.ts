@@ -166,7 +166,9 @@ export function useNodes(config: SiteConfig | null) {
               }
               for (const uuid of uuids) {
                 const cur = next.get(uuid) ?? blankAgent(uuid, entry.name)
-                next.set(uuid, { ...cur, meta: parseMeta(grouped.get(uuid) ?? {}) })
+                const meta = parseMeta(grouped.get(uuid) ?? {})
+                meta.order += entry.order_offset
+                next.set(uuid, { ...cur, meta })
               }
             }
 

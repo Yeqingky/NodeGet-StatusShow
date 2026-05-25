@@ -21,6 +21,14 @@ export function useUserConfig() {
       try {
         if(import.meta.env.NODEGET_CONFIG){
           const c = JSON.parse(import.meta.env.NODEGET_CONFIG)
+          if (Array.isArray(c.site_tokens)) {
+            c.site_tokens = c.site_tokens.map((t: any, i: number) => ({
+              name: t.name,
+              backend_url: t.backend_url,
+              token: t.token,
+              order_offset: t.order_offset ?? i * 1000,
+            }))
+          }
           alive && setConfig(c)
         }else{
           setError(new Error("检测到Dev模式，请先创建有效的Dev 环境变量 cp .env.example .env.local"))

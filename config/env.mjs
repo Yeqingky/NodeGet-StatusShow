@@ -36,6 +36,7 @@ export function buildEnvConfigOld() {
       name: fields.name || `master-${i}`,
       backend_url: fields.backend_url || fields.url || '',
       token: fields.token || '',
+      order_offset: fields.order_offset != null ? Number(fields.order_offset) : (i - 1) * 1000,
     })
   }
 
@@ -58,6 +59,12 @@ export function buildEnvConfig() {
       if (!config.user_preferences || !Array.isArray(config.site_tokens)) {
         throw "bad config environment variable"
       }
+      config.site_tokens = config.site_tokens.map((t, i) => ({
+        name: t.name,
+        backend_url: t.backend_url,
+        token: t.token,
+        order_offset: t.order_offset ?? i * 1000,
+      }))
       return config
     } catch (error) {
       console.error(error)

@@ -111,7 +111,8 @@ export interface UserConfig {
   site_tokens: { 
     name: string; 
     backend_url: string; 
-    token: string 
+    token: string;
+    order_offset?: number;
   }[]
 }
 
